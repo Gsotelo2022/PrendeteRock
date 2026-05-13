@@ -1,0 +1,27 @@
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.env.local
+frontend/.env.*.local
+
+# Backend
+backend/**/bin/
+backend/**/obj/
+backend/**/.vs/
+backend/**/.vscode/
+*.sln.DotSettings.user
+
+# IDE
+.vscode/
+.idea/
+*.vs/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.local

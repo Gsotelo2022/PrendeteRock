@@ -26,7 +26,7 @@ namespace PrendeteRock.API.Services
                     IsAdmin = u.IsAdmin,
                     CreatedAt = u.CreatedAt,
                     TotalOrders = u.Orders.Count,
-                    TotalSpent = u.Orders.Sum(o => o.FinalPrice)
+                    TotalSpent = u.Orders.Any() ? u.Orders.Sum(o => o.FinalPrice) : 0
                 })
                 .ToListAsync();
 
@@ -47,7 +47,7 @@ namespace PrendeteRock.API.Services
                     IsAdmin = u.IsAdmin,
                     CreatedAt = u.CreatedAt,
                     TotalOrders = u.Orders.Count,
-                    TotalSpent = u.Orders.Sum(o => o.FinalPrice)
+                    TotalSpent = u.Orders.Any() ? u.Orders.Sum(o => o.FinalPrice) : 0
                 })
                 .ToListAsync();
 
@@ -68,7 +68,7 @@ namespace PrendeteRock.API.Services
                     IsAdmin = u.IsAdmin,
                     CreatedAt = u.CreatedAt,
                     TotalOrders = u.Orders.Count,
-                    TotalSpent = u.Orders.Sum(o => o.FinalPrice)
+                    TotalSpent = u.Orders.Any() ? u.Orders.Sum(o => o.FinalPrice) : 0
                 })
                 .FirstOrDefaultAsync();
 

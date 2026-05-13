@@ -10,49 +10,88 @@
     </div>
 
     <!-- Stats Cards -->
-    <div class="stats-grid">
+    <div v-if="loading" class="loading-state">
+      <div class="spinner"></div>
+      <p>Cargando métricas...</p>
+    </div>
+
+    <div v-else-if="error" class="error-state">
+      <p>{{ error }}</p>
+      <button class="retry-btn" @click="loadMetrics">Reintentar</button>
+    </div>
+
+    <div v-else class="stats-grid">
       <div class="stat-card">
         <div class="stat-header">
           <span class="stat-icon revenue">💵</span>
-          <span class="stat-change positive">↑ +12.5%</span>
         </div>
         <p class="stat-label">Ingresos Totales</p>
-        <p class="stat-value">$27,900</p>
+        <p class="stat-value">${{ metrics.totalRevenue.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</p>
       </div>
 
       <div class="stat-card">
         <div class="stat-header">
           <span class="stat-icon orders">🛒</span>
-          <span class="stat-change positive">↑ +8.2%</span>
         </div>
         <p class="stat-label">Pedidos Totales</p>
-        <p class="stat-value">279</p>
+        <p class="stat-value">{{ metrics.totalOrders }}</p>
       </div>
 
       <div class="stat-card">
         <div class="stat-header">
           <span class="stat-icon customers">👥</span>
-          <span class="stat-change positive">↑ +15.3%</span>
         </div>
         <p class="stat-label">Clientes Totales</p>
-        <p class="stat-value">156</p>
+        <p class="stat-value">{{ metrics.totalCustomers }}</p>
       </div>
 
       <div class="stat-card">
         <div class="stat-header">
           <span class="stat-icon products">📦</span>
-          <span class="stat-change positive">↑ +4.0%</span>
         </div>
         <p class="stat-label">Productos Activos</p>
-        <p class="stat-value">24</p>
+        <p class="stat-value">{{ metrics.totalActiveProducts }}</p>
+      </div>
+    </div>
+
+    <!-- Recent Orders Table -->
+    <div v-if="!loading && !error && metrics.recentOrders.length > 0" class="recent-orders">
+      <h3>Pedidos Recientes</h3>
+      <div class="table-wrapper">
+        <table class="orders-table">
+          <thead>
+            <tr>
+              <th>ID de Pedido</th>
+              <th>Cliente</th>
+              <th>Producto</th>
+              <th>Monto</th>
+              <th>Estado</th>
+              <th>Fecha</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="order in metrics.recentOrders" :key="order.id">
+              <td class="order-id-cell">{{ order.orderId }}</td>
+              <td>{{ order.customer }}</td>
+              <td class="product-cell">{{ order.product }}</td>
+              <td class="amount-cell">${{ order.amount.toLocaleString('es-AR', { minimumFractionDigits: 2 }) }}</td>
+              <td>
+                <span class="status-badge" :class="'status-' + order.status.toLowerCase()">
+                  {{ translateStatus(order.status) }}
+                </span>
+              </td>
+              <td class="date-cell">{{ formatDate(order.createdAt) }}</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
 
     <!-- Charts Section -->
-    <div class="charts-grid">
+    <div v-if="!loading && !error && chartData.length > 0" class="charts-grid">
       <!-- Revenue Trend Chart -->
       <div class="chart-card">
-        <h3>Tendencia de Ingresos</h3>
+        <h3>Tendencia de Ingresos (Últimos 6 Meses)</h3>
         <div class="chart">
           <div class="chart-placeholder">
             <svg viewBox="0 0 400 250" preserveAspectRatio="xMidYMid meet">
@@ -62,32 +101,30 @@
               <line x1="50" y1="220" x2="390" y2="220" stroke="#e0e0e0" stroke-width="2"/>
               
               <!-- Y Axis Labels -->
-              <text x="20" y="230" font-size="12" fill="#999">0</text>
-              <text x="15" y="160" font-size="12" fill="#999">2000</text>
-              <text x="15" y="90" font-size="12" fill="#999">4000</text>
-              <text x="15" y="20" font-size="12" fill="#999">8000</text>
+              <text x="10" y="230" font-size="12" fill="#999">0</text>
+              <text x="10" y="160" font-size="12" fill="#999">{{ formatCurrency(maxRevenue * 0.33) }}</text>
+              <text x="10" y="90" font-size="12" fill="#999">{{ formatCurrency(maxRevenue * 0.66) }}</text>
+              <text x="10" y="30" font-size="12" fill="#999">{{ formatCurrency(maxRevenue) }}</text>
               
               <!-- X Axis Labels -->
-              <text x="45" y="245" font-size="12" fill="#999">Ene</text>
-              <text x="120" y="245" font-size="12" fill="#999">Feb</text>
-              <text x="185" y="245" font-size="12" fill="#999">Mar</text>
-              <text x="260" y="245" font-size="12" fill="#999">Abr</text>
-              <text x="340" y="245" font-size="12" fill="#999">May</text>
+              <text v-for="(item, index) in chartData" :key="'label-' + index" 
+                    :x="70 + (index * 65)" y="245" font-size="12" fill="#999">
+                {{ item.monthLabel }}
+              </text>
               
               <!-- Grid Lines -->
-              <line x1="45" y1="150" x2="390" y2="150" stroke="#f0f0f0" stroke-width="1"/>
-              <line x1="45" y1="80" x2="390" y2="80" stroke="#f0f0f0" stroke-width="1"/>
+              <line x1="50" y1="150" x2="390" y2="150" stroke="#f0f0f0" stroke-width="1"/>
+              <line x1="50" y1="80" x2="390" y2="80" stroke="#f0f0f0" stroke-width="1"/>
               
               <!-- Line Chart -->
-              <polyline points="70,140 145,110 220,130 295,80 370,50" 
+              <polyline :points="revenueLinePoints" 
                         stroke="url(#gradientLine)" stroke-width="3" fill="none" stroke-linecap="round"/>
               
               <!-- Points -->
-              <circle cx="70" cy="140" r="5" fill="#a020f0"/>
-              <circle cx="145" cy="110" r="5" fill="#a020f0"/>
-              <circle cx="220" cy="130" r="5" fill="#a020f0"/>
-              <circle cx="295" cy="80" r="5" fill="#a020f0"/>
-              <circle cx="370" cy="50" r="5" fill="#a020f0"/>
+              <circle v-for="(item, index) in chartData" :key="'point-' + index"
+                      :cx="70 + (index * 65)" 
+                      :cy="getRevenueY(item.revenue)" 
+                      r="5" fill="#a020f0"/>
               
               <!-- Gradient Definition -->
               <defs>
@@ -104,106 +141,148 @@
 
       <!-- Orders by Month Chart -->
       <div class="chart-card">
-        <h3>Pedidos por Mes</h3>
+        <h3>Pedidos por Mes (Últimos 6 Meses)</h3>
         <div class="chart">
           <div class="bar-chart">
-            <div class="bar-item">
-              <div class="bar" style="height: 50%; background: linear-gradient(180deg, #a020f0 0%, #ff006e 100%);"></div>
-              <p class="bar-label">Ene</p>
-            </div>
-            <div class="bar-item">
-              <div class="bar" style="height: 60%; background: linear-gradient(180deg, #a020f0 0%, #ff006e 100%);"></div>
-              <p class="bar-label">Feb</p>
-            </div>
-            <div class="bar-item">
-              <div class="bar" style="height: 55%; background: linear-gradient(180deg, #a020f0 0%, #ff006e 100%);"></div>
-              <p class="bar-label">Mar</p>
-            </div>
-            <div class="bar-item">
-              <div class="bar" style="height: 75%; background: linear-gradient(180deg, #a020f0 0%, #ff006e 100%);"></div>
-              <p class="bar-label">Abr</p>
-            </div>
-            <div class="bar-item">
-              <div class="bar" style="height: 90%; background: linear-gradient(180deg, #a020f0 0%, #ff006e 100%);"></div>
-              <p class="bar-label">May</p>
+            <div v-for="(item, index) in chartData" :key="'bar-' + index" class="bar-item">
+              <div class="bar" :style="getBarStyle(item.orders)"></div>
+              <p class="bar-label">{{ item.monthLabel }}</p>
+              <p class="bar-count">{{ item.orders }}</p>
             </div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Recent Orders Table -->
-    <div class="recent-orders">
-      <h3>Pedidos Recientes</h3>
-      <div class="table-wrapper">
-        <table class="orders-table">
-          <thead>
-            <tr>
-              <th>ID de Pedido</th>
-              <th>Cliente</th>
-              <th>Producto</th>
-              <th>Monto</th>
-              <th>Estado</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="order in recentOrders" :key="order.id">
-              <td class="order-id-cell">{{ order.orderId }}</td>
-              <td>{{ order.customer }}</td>
-              <td class="product-cell">{{ order.product }}</td>
-              <td class="amount-cell">${{ order.amount }}</td>
-              <td>
-                <span class="status-badge" :class="'status-' + order.status.toLowerCase()">
-                  {{ order.status }}
-                </span>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+    <!-- No data message -->
+    <div v-if="!loading && !error && chartData.length === 0" class="no-data-message">
+      <p>📊 No hay datos suficientes para mostrar los gráficos</p>
     </div>
   </div>
 </template>
 
 <script>
+import { useApi } from '../../composables/useApi'
+
 export default {
   name: 'AdminDashboard',
+  setup() {
+    const api = useApi()
+    return { api }
+  },
   data() {
     return {
-      recentOrders: [
-        {
-          id: 1,
-          orderId: 'ORD-279',
-          customer: 'John Doe',
-          product: 'Canvas Print',
-          amount: '44.99',
-          status: 'Delivered'
-        },
-        {
-          id: 2,
-          orderId: 'ORD-278',
-          customer: 'Jane Smith',
-          product: 'Poster',
-          amount: '24.99',
-          status: 'Shipped'
-        },
-        {
-          id: 3,
-          orderId: 'ORD-277',
-          customer: 'Bob Johnson',
-          product: 'Metal Print',
-          amount: '79.99',
-          status: 'Processing'
-        },
-        {
-          id: 4,
-          orderId: 'ORD-276',
-          customer: 'Alice Brown',
-          product: 'Acrylic Print',
-          amount: '99.99',
-          status: 'Pending'
-        }
-      ]
+      loading: true,
+      error: null,
+      metrics: {
+        totalRevenue: 0,
+        totalOrders: 0,
+        totalCustomers: 0,
+        totalActiveProducts: 0,
+        recentOrders: [],
+        revenueByMonth: [],
+        ordersByMonth: []
+      }
+    }
+  },
+  computed: {
+    chartData() {
+      // Procesar datos para los últimos 6 meses
+      const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+      const result = [];
+      
+      // Crear un mapa de los últimos 6 meses
+      for (let i = 5; i >= 0; i--) {
+        const date = new Date();
+        date.setMonth(date.getMonth() - i);
+        const year = date.getFullYear();
+        const month = date.getMonth() + 1;
+        
+        const revenueData = this.metrics.revenueByMonth?.find(r => r.year === year && r.month === month);
+        const ordersData = this.metrics.ordersByMonth?.find(o => o.year === year && o.month === month);
+        
+        result.push({
+          monthLabel: months[month - 1],
+          revenue: revenueData?.revenue || 0,
+          orders: ordersData?.count || 0
+        });
+      }
+      
+      return result;
+    },
+    maxRevenue() {
+      if (this.chartData.length === 0) return 1000;
+      const max = Math.max(...this.chartData.map(d => d.revenue));
+      return max > 0 ? Math.ceil(max / 1000) * 1000 : 1000;
+    },
+    maxOrders() {
+      if (this.chartData.length === 0) return 10;
+      const max = Math.max(...this.chartData.map(d => d.orders));
+      return max > 0 ? max : 10;
+    },
+    revenueLinePoints() {
+      return this.chartData.map((item, index) => {
+        const x = 70 + (index * 65);
+        const y = this.getRevenueY(item.revenue);
+        return `${x},${y}`;
+      }).join(' ');
+    }
+  },
+  mounted() {
+    this.loadMetrics()
+  },
+  methods: {
+    async loadMetrics() {
+      try {
+        this.loading = true
+        this.error = null
+        const data = await this.api.get('/dashboard/metrics')
+        this.metrics = data
+      } catch (err) {
+        console.error('Error cargando métricas:', err)
+        this.error = 'Error al cargar las métricas. Por favor, intenta nuevamente.'
+      } finally {
+        this.loading = false
+      }
+    },
+    translateStatus(status) {
+      const statusMap = {
+        'Pending': 'Pendiente',
+        'Processing': 'Procesando',
+        'Shipped': 'Enviado',
+        'Delivered': 'Entregado',
+        'Cancelled': 'Cancelado'
+      }
+      return statusMap[status] || status
+    },
+    formatDate(date) {
+      return new Date(date).toLocaleDateString('es-AR', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+      })
+    },
+    getRevenueY(revenue) {
+      // Mapear el revenue al eje Y (220 = bottom, 30 = top)
+      const percentage = this.maxRevenue > 0 ? revenue / this.maxRevenue : 0;
+      return 220 - (percentage * 190);
+    },
+    getBarStyle(orderCount) {
+      // Calcular altura de la barra basada en el máximo
+      const percentage = this.maxOrders > 0 ? (orderCount / this.maxOrders) * 100 : 0;
+      const height = Math.max(percentage, 5); // Mínimo 5% para visibilidad
+      return {
+        height: `${height}%`,
+        background: 'linear-gradient(180deg, #a020f0 0%, #ff006e 100%)'
+      };
+    },
+    formatCurrency(value) {
+      if (value >= 1000) {
+        return `$${(value / 1000).toFixed(1)}k`;
+      }
+      return `$${Math.round(value)}`;
     }
   }
 }
@@ -220,6 +299,72 @@ export default {
 .header {
   margin-bottom: 40px;
   padding: 0 20px;
+}
+
+/* Loading and Error States */
+.loading-state,
+.error-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  background: white;
+  border-radius: 20px;
+  margin: 0 20px 40px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+}
+
+.loading-state p,
+.error-state p {
+  margin-top: 20px;
+  color: #666;
+  font-size: 1rem;
+}
+
+.spinner {
+  width: 50px;
+  height: 50px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #a020f0;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.retry-btn {
+  margin-top: 15px;
+  padding: 10px 24px;
+  background: linear-gradient(135deg, #a020f0 0%, #ff006e 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.retry-btn:hover {
+  transform: translateY(-2px);
+}
+
+.no-data-message {
+  text-align: center;
+  padding: 40px 20px;
+  margin: 0 20px 40px;
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+}
+
+.no-data-message p {
+  font-size: 1.1rem;
+  color: #666;
+  margin: 0;
 }
 
 .back-btn {
@@ -263,6 +408,7 @@ export default {
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   gap: 20px;
   margin-bottom: 40px;
+  padding: 0 20px;
 }
 
 .stat-card {
@@ -327,6 +473,7 @@ export default {
   grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
   gap: 25px;
   margin-bottom: 40px;
+  padding: 0 20px;
 }
 
 .chart-card {
@@ -390,12 +537,20 @@ export default {
   margin: 0;
 }
 
+.bar-count {
+  font-size: 0.75rem;
+  color: #a020f0;
+  font-weight: 600;
+  margin: 5px 0 0 0;
+}
+
 /* Recent Orders */
 .recent-orders {
   background: white;
   padding: 30px;
   border-radius: 20px;
   box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+  margin: 0 20px 40px;
 }
 
 .recent-orders h3 {
@@ -453,6 +608,11 @@ export default {
 .amount-cell {
   font-weight: 600;
   color: #ff7a00;
+}
+
+.date-cell {
+  color: #666;
+  font-size: 0.9rem;
 }
 
 /* Status Badge */

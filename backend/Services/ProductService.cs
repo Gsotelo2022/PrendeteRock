@@ -23,14 +23,17 @@ namespace PrendeteRock.API.Services
             return await _context.Products.FindAsync(id);
         }
 
-        public async Task<Product> CreateAsync(string name, string description, decimal basePrice, string category)
+        public async Task<Product> CreateAsync(string name, string description, decimal basePrice, string category, string? imageUrl, bool isActive, int stock)
         {
             var product = new Product
             {
                 Name = name,
                 Description = description,
                 BasePrice = basePrice,
-                Category = category
+                Category = category,
+                ImageUrl = imageUrl,
+                IsActive = isActive,
+                Stock = stock
             };
 
             _context.Products.Add(product);
@@ -38,7 +41,7 @@ namespace PrendeteRock.API.Services
             return product;
         }
 
-        public async Task UpdateAsync(int id, string name, string description, decimal basePrice)
+        public async Task UpdateAsync(int id, string name, string description, decimal basePrice, string category, string? imageUrl, bool isActive, int stock)
         {
             var product = await _context.Products.FindAsync(id);
             if (product == null) throw new Exception("Producto no existe");
@@ -46,6 +49,10 @@ namespace PrendeteRock.API.Services
             product.Name = name;
             product.Description = description;
             product.BasePrice = basePrice;
+            product.Category = category;
+            product.ImageUrl = imageUrl;
+            product.IsActive = isActive;
+            product.Stock = stock;
 
             await _context.SaveChangesAsync();
         }

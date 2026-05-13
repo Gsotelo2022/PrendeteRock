@@ -37,8 +37,50 @@ namespace PrendeteRock.API.Controllers
             try
             {
                 var product = await _productService.CreateAsync(
-                    request.Name, request.Description, request.BasePrice, request.Category);
+                    request.Name, 
+                    request.Description, 
+                    request.BasePrice, 
+                    request.Category,
+                    request.ImageUrl,
+                    request.IsActive,
+                    request.Stock);
                 return Ok(product);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        [HttpPut("{id}")]
+        public async Task<IActionResult> Update(int id, [FromBody] UpdateProductRequest request)
+        {
+            try
+            {
+                await _productService.UpdateAsync(
+                    id, 
+                    request.Name, 
+                    request.Description, 
+                    request.BasePrice, 
+                    request.Category,
+                    request.ImageUrl,
+                    request.IsActive,
+                    request.Stock);
+                return Ok(new { message = "Producto actualizado exitosamente" });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> Delete(int id)
+        {
+            try
+            {
+                await _productService.DeleteAsync(id);
+                return Ok(new { message = "Producto eliminado exitosamente" });
             }
             catch (Exception ex)
             {
@@ -53,5 +95,19 @@ namespace PrendeteRock.API.Controllers
         public string Description { get; set; } = string.Empty;
         public decimal BasePrice { get; set; }
         public string Category { get; set; } = string.Empty;
+        public string? ImageUrl { get; set; }
+        public bool IsActive { get; set; } = true;
+        public int Stock { get; set; } = 0;
+    }
+
+    public class UpdateProductRequest
+    {
+        public string Name { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public decimal BasePrice { get; set; }
+        public string Category { get; set; } = string.Empty;
+        public string? ImageUrl { get; set; }
+        public bool IsActive { get; set; } = true;
+        public int Stock { get; set; }
     }
 }

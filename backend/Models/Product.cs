@@ -8,6 +8,7 @@ namespace PrendeteRock.API.Models
         public decimal BasePrice { get; set; }
         public string Category { get; set; } = string.Empty;
         public string? ImageUrl { get; set; }
+        public int Stock { get; set; } = 0;
         public bool IsActive { get; set; } = true;
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         

@@ -148,6 +148,45 @@
         </form>
       </div>
     </div>
+
+    <!-- Modal de Detalles de Pedidos -->
+    <div v-if="showDetailsModal" class="modal-overlay" @click="closeDetailsModal">
+      <div class="modal-content" @click.stop>
+        <div class="modal-header">
+          <h2 class="modal-title">Pedidos del Cliente</h2>
+          <button class="modal-close" @click="closeDetailsModal">✕</button>
+        </div>
+
+        <div class="details-content">
+          <div v-if="loadingOrders" class="loading-state">
+            <p>Cargando pedidos...</p>
+          </div>
+
+          <div v-else-if="customerOrders.length === 0" class="empty-state">
+            <p>Este cliente no tiene pedidos aún</p>
+          </div>
+
+          <div v-else class="orders-list">
+            <div v-for="order in customerOrders" :key="order.id" class="order-item">
+              <div class="order-info">
+                <span class="order-label">ID Pedido:</span>
+                <span class="order-value">#{{ order.id }}</span>
+              </div>
+              <div class="order-info">
+                <span class="order-label">Total:</span>
+                <span class="order-value">${{ order.finalPrice }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-actions">
+            <button type="button" class="btn-cancel" @click="closeDetailsModal">
+              Cerrar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -171,6 +210,9 @@ export default {
       loading: true,
       error: null,
       showEditModal: false,
+      showDetailsModal: false,
+      customerOrders: [],
+      loadingOrders: false,
       editForm: {
         id: null,
         fullName: '',
@@ -260,9 +302,27 @@ export default {
       this.router.push('/admin')
     },
 
-    handleViewDetails(customerId) {
-      console.log('Ver detalles del cliente:', customerId)
-      // TODO: Implementar vista de detalles
+    async handleViewDetails(customerId) {
+      try {
+        this.loadingOrders = true
+        this.showDetailsModal = true
+        this.customerOrders = []
+        
+        const orders = await this.api.get(`/orders/${customerId}`)
+        this.customerOrders = orders
+      } catch (error) {
+        console.error('Error al cargar pedidos:', error)
+        this.toast.error('Error al cargar los pedidos del cliente')
+        this.closeDetailsModal()
+      } finally {
+        this.loadingOrders = false
+      }
+    },
+
+    closeDetailsModal() {
+      this.showDetailsModal = false
+      this.customerOrders = []
+      this.loadingOrders = false
     },
 
     handleEdit(customer) {
@@ -769,6 +829,53 @@ export default {
   border-radius: 10px;
   font-size: 0.9rem;
   border-left: 4px solid #ff006e;
+}
+
+.details-content {
+  padding: 20px 0;
+}
+
+.orders-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.order-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  background: linear-gradient(135deg, rgba(160, 32, 240, 0.05) 0%, rgba(255, 0, 110, 0.05) 100%);
+  border-radius: 12px;
+  border: 1px solid rgba(160, 32, 240, 0.1);
+  transition: all 0.3s ease;
+}
+
+.order-item:hover {
+  transform: translateX(5px);
+  border-color: rgba(160, 32, 240, 0.3);
+  box-shadow: 0 4px 12px rgba(160, 32, 240, 0.1);
+}
+
+.order-info {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.order-label {
+  font-size: 0.85rem;
+  color: #666;
+  font-weight: 500;
+}
+
+.order-value {
+  font-size: 1.1rem;
+  color: #333;
+  font-weight: 700;
 }
 
 .modal-actions {

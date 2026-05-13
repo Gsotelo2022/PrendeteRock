@@ -73,9 +73,68 @@
 
         <div class="customer-actions">
           <button class="action-btn view-btn" @click="handleViewDetails(customer.id)">Ver Detalles</button>
-          <button class="action-btn edit-btn" @click="handleEdit(customer.id)">Editar</button>
+          <button class="action-btn edit-btn" @click="handleEdit(customer)">Editar</button>
           <button class="action-btn delete-btn" @click="handleDelete(customer.id)">Eliminar</button>
         </div>
+      </div>
+    </div>
+
+    <!-- Modal de Edición -->
+    <div v-if="showEditModal" class="modal-overlay" @click="closeEditModal">
+      <div class="modal-content" @click.stop>
+        <div class="modal-header">
+          <h2 class="modal-title">Editar Cliente</h2>
+          <button class="modal-close" @click="closeEditModal">✕</button>
+        </div>
+
+        <form @submit.prevent="saveChanges" class="edit-form">
+          <div class="form-group">
+            <label for="fullName">Nombre Completo</label>
+            <input 
+              v-model="editForm.fullName"
+              type="text" 
+              id="fullName"
+              class="form-control"
+              placeholder="Ingrese el nombre completo"
+              required
+            >
+          </div>
+
+          <div class="form-group">
+            <label for="email">Email</label>
+            <input 
+              v-model="editForm.email"
+              type="email" 
+              id="email"
+              class="form-control"
+              placeholder="Ingrese el email"
+              required
+            >
+          </div>
+
+          <div class="form-group readonly-info">
+            <label>ID del Cliente</label>
+            <p class="readonly-value">{{ editForm.customerId }}</p>
+          </div>
+
+          <div class="form-group readonly-info">
+            <label>Fecha de Registro</label>
+            <p class="readonly-value">{{ editForm.joinDate }}</p>
+          </div>
+
+          <div v-if="editError" class="error-message">
+            {{ editError }}
+          </div>
+
+          <div class="modal-actions">
+            <button type="button" class="btn-cancel" @click="closeEditModal" :disabled="saving">
+              Cancelar
+            </button>
+            <button type="submit" class="btn-save" :disabled="saving">
+              {{ saving ? 'Guardando...' : 'Guardar Cambios' }}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   </div>
@@ -97,7 +156,17 @@ export default {
       searchQuery: '',
       customers: [],
       loading: true,
-      error: null
+      error: null,
+      showEditModal: false,
+      editForm: {
+        id: null,
+        fullName: '',
+        email: '',
+        customerId: '',
+        joinDate: ''
+      },
+      saving: false,
+      editError: null
     }
   },
   computed: {
@@ -182,9 +251,53 @@ export default {
       // TODO: Implementar vista de detalles
     },
 
-    handleEdit(customerId) {
-      console.log('Editar cliente:', customerId)
-      // TODO: Implementar edición de cliente
+    handleEdit(customer) {
+      this.editForm = {
+        id: customer.id,
+        fullName: customer.name,
+        email: customer.email,
+        customerId: customer.customerId,
+        joinDate: customer.joinDate
+      }
+      this.editError = null
+      this.showEditModal = true
+    },
+
+    closeEditModal() {
+      this.showEditModal = false
+      this.editError = null
+      this.editForm = {
+        id: null,
+        fullName: '',
+        email: '',
+        customerId: '',
+        joinDate: ''
+      }
+    },
+
+    async saveChanges() {
+      try {
+        this.saving = true
+        this.editError = null
+
+        await this.api.put(`/users/${this.editForm.id}`, {
+          fullName: this.editForm.fullName,
+          email: this.editForm.email
+        })
+
+        // Recargar lista de clientes
+        await this.loadCustomers()
+        
+        // Cerrar modal
+        this.closeEditModal()
+        
+        alert('Cliente actualizado exitosamente')
+      } catch (error) {
+        console.error('Error al actualizar cliente:', error)
+        this.editError = 'Error al actualizar el cliente. Por favor, intente nuevamente.'
+      } finally {
+        this.saving = false
+      }
     },
 
     async handleDelete(customerId) {
@@ -507,6 +620,182 @@ export default {
   transform: translateY(-2px);
 }
 
+/* Modal */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 20px;
+  padding: 30px;
+  max-width: 500px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 50px rgba(0, 0, 0, 0.3);
+  animation: modalSlideIn 0.3s ease;
+}
+
+@keyframes modalSlideIn {
+  from {
+    transform: translateY(-50px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 25px;
+  padding-bottom: 15px;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.modal-title {
+  font-size: 1.8rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, #a020f0 0%, #ff006e 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin: 0;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: #999;
+  cursor: pointer;
+  padding: 5px 10px;
+  transition: all 0.3s ease;
+}
+
+.modal-close:hover {
+  color: #ff006e;
+  transform: rotate(90deg);
+}
+
+/* Form */
+.edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-group label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.form-control {
+  padding: 12px 15px;
+  border: 2px solid #e0e0e0;
+  border-radius: 10px;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+}
+
+.form-control:focus {
+  outline: none;
+  border-color: #a020f0;
+  box-shadow: 0 0 0 3px rgba(160, 32, 240, 0.1);
+}
+
+.readonly-info {
+  background: #f9f9f9;
+  padding: 15px;
+  border-radius: 10px;
+}
+
+.readonly-info label {
+  color: #666;
+  font-size: 0.85rem;
+  margin-bottom: 5px;
+}
+
+.readonly-value {
+  margin: 0;
+  font-weight: 600;
+  color: #333;
+  font-size: 1rem;
+}
+
+.error-message {
+  background: rgba(255, 0, 110, 0.1);
+  color: #ff006e;
+  padding: 12px 15px;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  border-left: 4px solid #ff006e;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 15px;
+  margin-top: 10px;
+}
+
+.btn-cancel,
+.btn-save {
+  flex: 1;
+  padding: 12px 20px;
+  border: none;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-cancel {
+  background: #f0f0f0;
+  color: #666;
+}
+
+.btn-cancel:hover:not(:disabled) {
+  background: #e0e0e0;
+}
+
+.btn-save {
+  background: linear-gradient(135deg, #a020f0 0%, #ff006e 100%);
+  color: white;
+}
+
+.btn-save:hover:not(:disabled) {
+  opacity: 0.9;
+  transform: translateY(-2px);
+}
+
+.btn-cancel:disabled,
+.btn-save:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 /* Responsive */
 @media (max-width: 1024px) {
   .customers-list {
@@ -548,6 +837,24 @@ export default {
   .action-btn {
     padding: 8px 12px;
     font-size: 0.8rem;
+  }
+
+  .modal-content {
+    padding: 25px;
+    max-width: 100%;
+  }
+
+  .modal-title {
+    font-size: 1.5rem;
+  }
+
+  .modal-actions {
+    flex-direction: column;
+  }
+
+  .btn-cancel,
+  .btn-save {
+    width: 100%;
   }
 }
 
@@ -591,6 +898,19 @@ export default {
 
   .search-input {
     padding: 12px 15px;
+    font-size: 0.9rem;
+  }
+
+  .modal-content {
+    padding: 20px;
+  }
+
+  .modal-title {
+    font-size: 1.3rem;
+  }
+
+  .form-control {
+    padding: 10px 12px;
     font-size: 0.9rem;
   }
 }

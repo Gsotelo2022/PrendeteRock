@@ -3,4 +3,4 @@ Mejoras a futuro:
 2 - En la carga de productos, ajusta imagen url para subir la foto del productos
 3 - Agregar la seccion de gestion de pedidos entre Dashboard y Clientes
 4 - Agregar agente IA que proponga cupones basado en las metricas
-
+5 - En la Gestión de pedidos, permitir editarlos (estado y pago)

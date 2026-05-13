@@ -87,7 +87,7 @@ namespace PrendeteRock.API.Controllers
         {
             try
             {
-                var user = await _userService.UpdateUserAsync(id, request.FullName, request.Email);
+                var user = await _userService.UpdateUserAsync(id, request.FullName, request.Email, request.Phone);
                 if (user == null)
                     return NotFound(new { message = "Usuario no encontrado" });
 
@@ -104,5 +104,6 @@ namespace PrendeteRock.API.Controllers
     {
         public string? FullName { get; set; }
         public string? Email { get; set; }
+        public string? Phone { get; set; }
     }
 }

@@ -1,0 +1,47 @@
+import { reactive } from 'vue'
+
+const toasts = reactive([])
+let nextId = 0
+
+export function useToast() {
+  const showToast = (message, type = 'info', duration = 3000) => {
+    const id = nextId++
+    const toast = {
+      id,
+      message,
+      type, // 'success', 'error', 'warning', 'info'
+      duration
+    }
+
+    toasts.push(toast)
+
+    // Auto-remove después de duration
+    setTimeout(() => {
+      removeToast(id)
+    }, duration)
+
+    return id
+  }
+
+  const removeToast = (id) => {
+    const index = toasts.findIndex(t => t.id === id)
+    if (index !== -1) {
+      toasts.splice(index, 1)
+    }
+  }
+
+  const success = (message, duration) => showToast(message, 'success', duration)
+  const error = (message, duration) => showToast(message, 'error', duration)
+  const warning = (message, duration) => showToast(message, 'warning', duration)
+  const info = (message, duration) => showToast(message, 'info', duration)
+
+  return {
+    toasts,
+    showToast,
+    removeToast,
+    success,
+    error,
+    warning,
+    info
+  }
+}

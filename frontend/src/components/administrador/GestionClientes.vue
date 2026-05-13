@@ -112,6 +112,17 @@
             >
           </div>
 
+          <div class="form-group">
+            <label for="phone">Teléfono</label>
+            <input 
+              v-model="editForm.phone"
+              type="tel" 
+              id="phone"
+              class="form-control"
+              placeholder="Ingrese el teléfono (opcional)"
+            >
+          </div>
+
           <div class="form-group readonly-info">
             <label>ID del Cliente</label>
             <p class="readonly-value">{{ editForm.customerId }}</p>
@@ -143,13 +154,15 @@
 <script>
 import { useRouter } from 'vue-router'
 import { useApi } from '../../composables/useApi'
+import { useToast } from '../../composables/useToast'
 
 export default {
   name: 'GestionClientes',
   setup() {
     const router = useRouter()
     const api = useApi()
-    return { router, api }
+    const toast = useToast()
+    return { router, api, toast }
   },
   data() {
     return {
@@ -162,6 +175,7 @@ export default {
         id: null,
         fullName: '',
         email: '',
+        phone: '',
         customerId: '',
         joinDate: ''
       },
@@ -199,7 +213,7 @@ export default {
           name: user.fullName,
           customerId: `CUST-${String(user.id).padStart(3, '0')}`,
           email: user.email,
-          phone: 'N/A', // El backend no tiene teléfono por ahora
+          phone: user.phone || 'N/A',
           initials: this.getInitials(user.fullName),
           avatarBg: this.getAvatarGradient(index),
           totalOrders: user.totalOrders,
@@ -256,6 +270,7 @@ export default {
         id: customer.id,
         fullName: customer.name,
         email: customer.email,
+        phone: customer.phone === 'N/A' ? '' : customer.phone,
         customerId: customer.customerId,
         joinDate: customer.joinDate
       }
@@ -270,6 +285,7 @@ export default {
         id: null,
         fullName: '',
         email: '',
+        phone: '',
         customerId: '',
         joinDate: ''
       }
@@ -282,7 +298,8 @@ export default {
 
         await this.api.put(`/users/${this.editForm.id}`, {
           fullName: this.editForm.fullName,
-          email: this.editForm.email
+          email: this.editForm.email,
+          phone: this.editForm.phone || null
         })
 
         // Recargar lista de clientes
@@ -291,10 +308,11 @@ export default {
         // Cerrar modal
         this.closeEditModal()
         
-        alert('Cliente actualizado exitosamente')
+        this.toast.success('Cliente actualizado exitosamente')
       } catch (error) {
         console.error('Error al actualizar cliente:', error)
         this.editError = 'Error al actualizar el cliente. Por favor, intente nuevamente.'
+        this.toast.error('Error al actualizar el cliente')
       } finally {
         this.saving = false
       }
@@ -306,10 +324,10 @@ export default {
           await this.api.del(`/users/${customerId}`)
           // Recargar lista de clientes
           await this.loadCustomers()
-          alert('Cliente eliminado exitosamente')
+          this.toast.success('Cliente eliminado exitosamente')
         } catch (error) {
           console.error('Error al eliminar cliente:', error)
-          alert('Error al eliminar el cliente')
+          this.toast.error('Error al eliminar el cliente')
         }
       }
     }

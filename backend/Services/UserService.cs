@@ -25,6 +25,7 @@ namespace PrendeteRock.API.Services
                 Id = u.Id,
                 Email = u.Email,
                 FullName = u.FullName,
+                Phone = u.Phone,
                 IsAdmin = u.IsAdmin,
                 CreatedAt = u.CreatedAt,
                 TotalOrders = u.Orders.Count,
@@ -47,6 +48,7 @@ namespace PrendeteRock.API.Services
                 Id = u.Id,
                 Email = u.Email,
                 FullName = u.FullName,
+                Phone = u.Phone,
                 IsAdmin = u.IsAdmin,
                 CreatedAt = u.CreatedAt,
                 TotalOrders = u.Orders.Count,
@@ -72,6 +74,7 @@ namespace PrendeteRock.API.Services
                 Id = user.Id,
                 Email = user.Email,
                 FullName = user.FullName,
+                Phone = user.Phone,
                 IsAdmin = user.IsAdmin,
                 CreatedAt = user.CreatedAt,
                 TotalOrders = user.Orders.Count,
@@ -94,7 +97,7 @@ namespace PrendeteRock.API.Services
         }
 
         // Actualizar información del usuario
-        public async Task<User?> UpdateUserAsync(int userId, string? fullName, string? email)
+        public async Task<User?> UpdateUserAsync(int userId, string? fullName, string? email, string? phone)
         {
             var user = await _context.Users.FindAsync(userId);
             if (user == null)
@@ -105,6 +108,9 @@ namespace PrendeteRock.API.Services
 
             if (!string.IsNullOrEmpty(email))
                 user.Email = email;
+
+            if (phone != null)
+                user.Phone = phone;
 
             await _context.SaveChangesAsync();
             return user;
@@ -117,6 +123,7 @@ namespace PrendeteRock.API.Services
         public int Id { get; set; }
         public string Email { get; set; } = string.Empty;
         public string FullName { get; set; } = string.Empty;
+        public string? Phone { get; set; }
         public bool IsAdmin { get; set; }
         public DateTime CreatedAt { get; set; }
         public int TotalOrders { get; set; }

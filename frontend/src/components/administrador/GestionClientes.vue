@@ -21,7 +21,16 @@
 
     <!-- Customers List -->
     <div class="customers-list">
-      <div v-if="filteredCustomers.length === 0" class="empty-state">
+      <div v-if="loading" class="loading-state">
+        <p>Cargando clientes...</p>
+      </div>
+      
+      <div v-else-if="error" class="error-state">
+        <p>{{ error }}</p>
+        <button @click="loadCustomers" class="retry-btn">Reintentar</button>
+      </div>
+      
+      <div v-else-if="filteredCustomers.length === 0" class="empty-state">
         <p>No se encontraron clientes</p>
       </div>
       
@@ -74,78 +83,21 @@
 
 <script>
 import { useRouter } from 'vue-router'
+import { useApi } from '../../composables/useApi'
 
 export default {
   name: 'GestionClientes',
   setup() {
     const router = useRouter()
-    return { router }
+    const api = useApi()
+    return { router, api }
   },
   data() {
     return {
       searchQuery: '',
-      customers: [
-        {
-          id: 1,
-          name: 'John Doe',
-          customerId: 'CUST-001',
-          email: 'john@example.com',
-          phone: '+1 234-567-8901',
-          initials: 'JD',
-          avatarBg: 'linear-gradient(135deg, #a020f0 0%, #ff006e 100%)',
-          totalOrders: 12,
-          totalSpent: 590,
-          joinDate: 'Dic 2025'
-        },
-        {
-          id: 2,
-          name: 'Jane Smith',
-          customerId: 'CUST-002',
-          email: 'jane@example.com',
-          phone: '+1 234-567-8902',
-          initials: 'JS',
-          avatarBg: 'linear-gradient(135deg, #ff006e 0%, #ff7a00 100%)',
-          totalOrders: 8,
-          totalSpent: 425,
-          joinDate: 'Ene 2026'
-        },
-        {
-          id: 3,
-          name: 'Bob Johnson',
-          customerId: 'CUST-003',
-          email: 'bob@example.com',
-          phone: '+1 234-567-8903',
-          initials: 'BJ',
-          avatarBg: 'linear-gradient(135deg, #ff7a00 0%, #a020f0 100%)',
-          totalOrders: 15,
-          totalSpent: 880,
-          joinDate: 'Nov 2025'
-        },
-        {
-          id: 4,
-          name: 'Alice Brown',
-          customerId: 'CUST-004',
-          email: 'alice@example.com',
-          phone: '+1 234-567-8904',
-          initials: 'AB',
-          avatarBg: 'linear-gradient(135deg, #a020f0 0%, #ff7a00 100%)',
-          totalOrders: 5,
-          totalSpent: 300,
-          joinDate: 'Feb 2026'
-        },
-        {
-          id: 5,
-          name: 'Charlie Wilson',
-          customerId: 'CUST-005',
-          email: 'charlie@example.com',
-          phone: '+1 234-567-8905',
-          initials: 'CW',
-          avatarBg: 'linear-gradient(135deg, #ff006e 0%, #ff7a00 100%)',
-          totalOrders: 20,
-          totalSpent: 1250,
-          joinDate: 'Sep 2025'
-        }
-      ]
+      customers: [],
+      loading: true,
+      error: null
     }
   },
   computed: {
@@ -161,22 +113,91 @@ export default {
       )
     }
   },
+  async mounted() {
+    await this.loadCustomers()
+  },
   methods: {
+    // Cargar clientes desde la API
+    async loadCustomers() {
+      try {
+        this.loading = true
+        this.error = null
+        const response = await this.api.get('/users/clients')
+        
+        // Transformar datos del backend al formato del frontend
+        this.customers = response.map((user, index) => ({
+          id: user.id,
+          name: user.fullName,
+          customerId: `CUST-${String(user.id).padStart(3, '0')}`,
+          email: user.email,
+          phone: 'N/A', // El backend no tiene teléfono por ahora
+          initials: this.getInitials(user.fullName),
+          avatarBg: this.getAvatarGradient(index),
+          totalOrders: user.totalOrders,
+          totalSpent: user.totalSpent,
+          joinDate: this.formatDate(user.createdAt)
+        }))
+      } catch (error) {
+        console.error('Error al cargar clientes:', error)
+        this.error = 'Error al cargar los clientes'
+      } finally {
+        this.loading = false
+      }
+    },
+
+    // Obtener iniciales del nombre
+    getInitials(fullName) {
+      const names = fullName.trim().split(' ')
+      if (names.length === 1) {
+        return names[0].substring(0, 2).toUpperCase()
+      }
+      return (names[0][0] + names[names.length - 1][0]).toUpperCase()
+    },
+
+    // Generar gradiente del avatar
+    getAvatarGradient(index) {
+      const gradients = [
+        'linear-gradient(135deg, #a020f0 0%, #ff006e 100%)',
+        'linear-gradient(135deg, #ff006e 0%, #ff7a00 100%)',
+        'linear-gradient(135deg, #ff7a00 0%, #a020f0 100%)',
+        'linear-gradient(135deg, #a020f0 0%, #ff7a00 100%)',
+        'linear-gradient(135deg, #ff006e 0%, #a020f0 100%)'
+      ]
+      return gradients[index % gradients.length]
+    },
+
+    // Formatear fecha
+    formatDate(dateString) {
+      const date = new Date(dateString)
+      const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
+      return `${months[date.getMonth()]} ${date.getFullYear()}`
+    },
+
     goHome() {
       this.router.push('/admin')
     },
+
     handleViewDetails(customerId) {
       console.log('Ver detalles del cliente:', customerId)
       // TODO: Implementar vista de detalles
     },
+
     handleEdit(customerId) {
       console.log('Editar cliente:', customerId)
       // TODO: Implementar edición de cliente
     },
-    handleDelete(customerId) {
+
+    async handleDelete(customerId) {
       if (confirm('¿Estás seguro de que deseas eliminar este cliente?')) {
-        console.log('Eliminar cliente:', customerId)
-        // TODO: Implementar eliminación de cliente
+        try {
+          await this.api.del(`/users/${customerId}`)
+          // Recargar lista de clientes
+          await this.loadCustomers()
+          alert('Cliente eliminado exitosamente')
+        } catch (error) {
+          console.error('Error al eliminar cliente:', error)
+          alert('Error al eliminar el cliente')
+        }
       }
     }
   }
@@ -434,6 +455,56 @@ export default {
   font-size: 1.1rem;
   color: #999;
   margin: 0;
+}
+
+/* Loading State */
+.loading-state {
+  grid-column: 1 / -1;
+  padding: 60px 20px;
+  text-align: center;
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+}
+
+.loading-state p {
+  font-size: 1.1rem;
+  color: #a020f0;
+  margin: 0;
+  font-weight: 600;
+}
+
+/* Error State */
+.error-state {
+  grid-column: 1 / -1;
+  padding: 60px 20px;
+  text-align: center;
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+}
+
+.error-state p {
+  font-size: 1.1rem;
+  color: #ff006e;
+  margin: 0 0 20px 0;
+}
+
+.retry-btn {
+  padding: 12px 30px;
+  border: none;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #a020f0 0%, #ff006e 100%);
+  color: white;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.retry-btn:hover {
+  opacity: 0.9;
+  transform: translateY(-2px);
 }
 
 /* Responsive */

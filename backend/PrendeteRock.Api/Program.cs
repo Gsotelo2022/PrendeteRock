@@ -9,10 +9,10 @@ using PrendeteRock.API.Services;
 var builder = WebApplication.CreateBuilder(args);
 
 // Agregar DbContext
-string connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? "Data Source=PrendeteRock.db";
+string connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? "Host=localhost;Port=5432;Database=BasePrendeteRock;Username=postgres;Password=Pasteldepapas123#";
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlite(connectionString)
+    options.UseNpgsql(connectionString)
 );
 
 // Configurar JWT

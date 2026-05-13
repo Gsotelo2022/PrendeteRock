@@ -1,3 +1,6 @@
 Mejoras a futuro:
 1 - En la eliminacion de cliente, usar el mismo modal de confirmacion que en productos.
 2 - En la carga de productos, ajusta imagen url para subir la foto del productos
+3 - Agregar la seccion de gestion de pedidos entre Dashboard y Clientes
+4 - Agregar agente IA que proponga cupones basado en las metricas
+

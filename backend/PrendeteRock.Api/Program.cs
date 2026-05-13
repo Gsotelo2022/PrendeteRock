@@ -70,6 +70,7 @@ builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<ProductService>();
 builder.Services.AddScoped<OrderService>();
 builder.Services.AddScoped<DiscountService>();
+builder.Services.AddScoped<CouponService>();
 
 var app = builder.Build();
 

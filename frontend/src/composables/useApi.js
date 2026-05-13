@@ -43,7 +43,9 @@ export function useApi() {
       })
       
       if (!response.ok) {
-        throw new Error(`Error ${response.status}`)
+        const errorData = await response.json().catch(() => null)
+        console.error('POST Error Response:', errorData)
+        throw new Error(`Error ${response.status}: ${errorData?.message || errorData?.innerException || 'Unknown error'}`)
       }
       
       return await response.json()
@@ -63,12 +65,36 @@ export function useApi() {
       })
       
       if (!response.ok) {
-        throw new Error(`Error ${response.status}`)
+        const errorData = await response.json().catch(() => null)
+        console.error('PUT Error Response:', errorData)
+        throw new Error(`Error ${response.status}: ${errorData?.message || errorData?.innerException || 'Unknown error'}`)
       }
       
       return await response.json()
     } catch (error) {
       console.error('PUT Error:', error)
+      throw error
+    }
+  }
+
+  // PATCH request
+  const patch = async (endpoint, data = {}) => {
+    try {
+      const response = await fetch(`${baseURL}${endpoint}`, {
+        method: 'PATCH',
+        headers: getHeaders(),
+        body: JSON.stringify(data)
+      })
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null)
+        console.error('PATCH Error Response:', errorData)
+        throw new Error(`Error ${response.status}: ${errorData?.message || errorData?.innerException || 'Unknown error'}`)
+      }
+      
+      return await response.json()
+    } catch (error) {
+      console.error('PATCH Error:', error)
       throw error
     }
   }
@@ -143,6 +169,7 @@ export function useApi() {
     get,
     post,
     put,
+    patch,
     del,
     setToken,
     clearToken,

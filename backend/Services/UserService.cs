@@ -18,19 +18,20 @@ namespace PrendeteRock.API.Services
         {
             var users = await _context.Users
                 .Include(u => u.Orders)
-                .Select(u => new UserWithStatsDto
-                {
-                    Id = u.Id,
-                    Email = u.Email,
-                    FullName = u.FullName,
-                    IsAdmin = u.IsAdmin,
-                    CreatedAt = u.CreatedAt,
-                    TotalOrders = u.Orders.Count,
-                    TotalSpent = u.Orders.Any() ? u.Orders.Sum(o => o.FinalPrice) : 0
-                })
                 .ToListAsync();
 
-            return users;
+            var result = users.Select(u => new UserWithStatsDto
+            {
+                Id = u.Id,
+                Email = u.Email,
+                FullName = u.FullName,
+                IsAdmin = u.IsAdmin,
+                CreatedAt = u.CreatedAt,
+                TotalOrders = u.Orders.Count,
+                TotalSpent = u.Orders.Sum(o => o.FinalPrice)
+            }).ToList();
+
+            return result;
         }
 
         // Obtener solo clientes (no admins) con estadísticas
@@ -39,19 +40,20 @@ namespace PrendeteRock.API.Services
             var clients = await _context.Users
                 .Where(u => !u.IsAdmin)
                 .Include(u => u.Orders)
-                .Select(u => new UserWithStatsDto
-                {
-                    Id = u.Id,
-                    Email = u.Email,
-                    FullName = u.FullName,
-                    IsAdmin = u.IsAdmin,
-                    CreatedAt = u.CreatedAt,
-                    TotalOrders = u.Orders.Count,
-                    TotalSpent = u.Orders.Any() ? u.Orders.Sum(o => o.FinalPrice) : 0
-                })
                 .ToListAsync();
 
-            return clients;
+            var result = clients.Select(u => new UserWithStatsDto
+            {
+                Id = u.Id,
+                Email = u.Email,
+                FullName = u.FullName,
+                IsAdmin = u.IsAdmin,
+                CreatedAt = u.CreatedAt,
+                TotalOrders = u.Orders.Count,
+                TotalSpent = u.Orders.Sum(o => o.FinalPrice)
+            }).ToList();
+
+            return result;
         }
 
         // Obtener un usuario por ID con estadísticas
@@ -60,19 +62,23 @@ namespace PrendeteRock.API.Services
             var user = await _context.Users
                 .Where(u => u.Id == userId)
                 .Include(u => u.Orders)
-                .Select(u => new UserWithStatsDto
-                {
-                    Id = u.Id,
-                    Email = u.Email,
-                    FullName = u.FullName,
-                    IsAdmin = u.IsAdmin,
-                    CreatedAt = u.CreatedAt,
-                    TotalOrders = u.Orders.Count,
-                    TotalSpent = u.Orders.Any() ? u.Orders.Sum(o => o.FinalPrice) : 0
-                })
                 .FirstOrDefaultAsync();
 
-            return user;
+            if (user == null)
+                return null;
+
+            var result = new UserWithStatsDto
+            {
+                Id = user.Id,
+                Email = user.Email,
+                FullName = user.FullName,
+                IsAdmin = user.IsAdmin,
+                CreatedAt = user.CreatedAt,
+                TotalOrders = user.Orders.Count,
+                TotalSpent = user.Orders.Sum(o => o.FinalPrice)
+            };
+
+            return result;
         }
 
         // Eliminar usuario
